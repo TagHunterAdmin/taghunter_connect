@@ -60,8 +60,8 @@ class defineApp {
         this.releaseNotes := "",
         this.appPath := "",
         this.extension := "",
-        this.downloadPath := A_MyDocuments "\temp"
-        this.logpath := A_MyDocuments "\log_updater_ahk.json"
+        this.downloadPath := A_ScriptDir "\temp"
+        this.logpath := A_ScriptDir "\log_updater_ahk.json"
     }
     ; Define a method for adding a dictionary of 3 strings to the array
 
@@ -80,6 +80,8 @@ class defineApp {
 
     checkforUpdate() {
         jdata := this.loadLog()
+            debug this.version
+                debug jdata
 		if (jdata) {
             if (this.version != jdata["version"]) {
                 return jdata
@@ -90,9 +92,11 @@ class defineApp {
 		}
     }
     LoadLog() {
+	
         if FileExist(this.logpath) {
             json_raw := FileRead(this.logpath)
             jdata := JSON.parse(json_raw)
+        
             ;MsgBox(jdata["version"])
             return jdata
         } else {

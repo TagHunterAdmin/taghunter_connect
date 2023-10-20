@@ -16,6 +16,7 @@ class Gitter {
         } catch {
         }
         ;filedelete, "1.json"
+
         this.dlurl := data["assets"][1]["browser_download_url"]
         this.asset := data["assets"][1]["name"]
         this.vers := data["html_url"]
