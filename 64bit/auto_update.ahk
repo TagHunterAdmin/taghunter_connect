@@ -60,7 +60,7 @@ class defineApp {
         this.releaseNotes := "",
         this.appPath := "",
         this.extension := "",
-        this.downloadPath := A_ScriptDir "\temp"
+        this.downloadPath := A_MyDocuments "\temp"
         this.logpath := A_ScriptDir "\log_updater_ahk.json"
     }
     ; Define a method for adding a dictionary of 3 strings to the array
@@ -80,8 +80,7 @@ class defineApp {
 
     checkforUpdate() {
         jdata := this.loadLog()
-            debug this.version
-                debug jdata
+    
 		if (jdata) {
             if (this.version != jdata["version"]) {
                 return jdata
@@ -140,23 +139,30 @@ class defineApp {
         git.download(this.downloadpath)
         extension := this.extension
         source := this.downloadpath . extension
+        debug source
+        debug extension
         if (InStr(extension, "zip")) or (InStr(extension, "7z")) or (InStr(extension, "rar")) {
+             debug "in"
             this.zip()
         }
         else {
             FileMove(source, this.appPath)
         }
         this.version := git.version()
-        this.writeJSON()
+       ; this.writeJSON()
 
     }
 
     zip() {
-        zipperPath := A_MyDocuments . "\7za"
-        ziplog := A_MyDocuments . "\templog.txt"
+
+         debug "inzip"
+        zipperPath := A_ScriptDir . "\7za"
+        ziplog := A_ScriptDir . "\templog.txt"
         temp := this.downloadpath . this.extension
+ debug temp
         SplitPath(this.appPath, ,&app)
-        zipobj := Github("samfisherirl", "7za")
+        zipobj := Github("TagHunterAdmin", "7za")
+        debug zipobj
         if not (FileExist(zipperPath ".exe")) {
             zipobj.download(zipperPath)
         }

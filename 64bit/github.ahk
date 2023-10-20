@@ -6,17 +6,20 @@ class Gitter {
     __new(val) {
         temp := A_ScriptDir "\temp.json"
         url := "https://api.github.com/repos/" val "/releases/latest"
+          debug url
+          debug temp
         Download(url, temp)
         sleep(100)
         data := FileRead(temp)
 
         data := JSON.parse(data)
+             debug data
         try{
         filedelete(temp)
         } catch {
         }
+        debug url
         ;filedelete, "1.json"
-
         this.dlurl := data["assets"][1]["browser_download_url"]
         this.asset := data["assets"][1]["name"]
         this.vers := data["html_url"]
