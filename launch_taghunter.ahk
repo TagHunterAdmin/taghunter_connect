@@ -6,12 +6,14 @@
 #Include %A_ScriptDir%\csv.ahk
 #Include %A_ScriptDir%\Jxon_Load.ahk
 #Include, %A_ScriptDir%\class.Spinner.ahk
-#Include %A_ScriptDir%\64bit\Native.ahk
-#Include %A_ScriptDir%\64bit\github.ahk
-#Include %A_ScriptDir%\64bit\auto_update.ahk
 
-
-
+unz("C:\Users\coral\Documents\temp.zip", "C:\Users\coral\Documents\test\")
+Unz(sZip, sUnz){								
+    ; sZip = the fullpath of the zip file, sUnz the folder to contain the extracted files
+    FileCreateDir, %sUnz%
+    psh := ComObjCreate("Shell.Application")
+    psh.Namespace( sUnz ).CopyHere( psh.Namespace( sZip ).items, 4|16 )
+}
 
 SetWorkingDir, %A_ScriptDir%
 
@@ -24,35 +26,6 @@ global interval := 0.5 ; set the interval
 global ConfigDone := false
 global DeviceUniq := A_ComputerName
 ImageFile = logo_tag_hunter_connect.png
-
-
-myApp := defineApp("TagHunterAdmin", "taghunter_connect")
-; this example refers to my repo http://github.com/samfisherirl/github.ahk
-
-path_of_app := A_ScriptDir
-; set where my application is stored on the local computer
-
-myApp.setPath(path_of_app)
-
-myApp.connectGithubAPI()
-
-update := myApp.checkforUpdate()
-
-if (update) {
-    ;update stores all json data, you can see some details below. Look at "defineApp" class for more details
-    msg := update["repo"] . " version number " . update["version"] . " needs an update. Release notes include:`n" . update["releaseNotes"]
-    Msgbox(msg)
-
-    myApp.update()
-    ;gets file from repo, if zip/7zip, extract
-    ;then overwrite existing app
-    ;updates log
-}
-else {
-    msgbox("You're up to date!")
-}
-
-
 
 
 Menu, Tray, Icon, logo_tag_hunter_connect_favicon.ico

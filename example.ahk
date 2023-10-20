@@ -1,6 +1,6 @@
-﻿; this is example.ahk
-#Include %A_ScriptDir%\debug.ahk
+﻿
 
+#Include %A_ScriptDir%\debug.ahk
 #Include %A_ScriptDir%\64bit\Native.ahk
 #Include %A_ScriptDir%\64bit\github.ahk
 #Include %A_ScriptDir%\64bit\auto_update.ahk
@@ -22,6 +22,7 @@ This solution does the following:
 Try, Catch need to be implimented as a code feature (I dont self-referentially update for you so make sure to check the github  for updates ;)
 
 */
+
 myApp := defineApp("TagHunterAdmin", "taghunter_connect")
 ; this example refers to my repo http://github.com/samfisherirl/github.ahk
 
@@ -34,15 +35,14 @@ myApp.setPath(path_of_app)
 myApp.connectGithubAPI()
 
 update := myApp.checkforUpdate()
-
 if (update) {
     msg := update["repo"] . " version number " . update["version"] . " needs an update. Release notes include:`n" . update["releaseNotes"]
     Msgbox(msg)
 
     myApp.update()
-    ;gets file from repo, if zip/7zip, extract
-    ;then overwrite existing app
-    ;updates log
+    ; gets file from repo, if zip/7zip, extract
+    ; then overwrite existing app
+    ; updates log
 }
 else {
     msgbox("You're up to date!")
