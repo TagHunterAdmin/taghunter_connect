@@ -5,10 +5,33 @@
 #Include %A_ScriptDir%\objectToString.ahk
 #Include %A_ScriptDir%\csvtoDict.ahk
 #Include %A_ScriptDir%\_JXON.ahk
+#Include %A_ScriptDir%\debug.ahk
+#Include %A_ScriptDir%\64bit\Native.ahk
+#Include %A_ScriptDir%\64bit\github.ahk
+#Include %A_ScriptDir%\64bit\auto_update.ahk
 
 #Requires AutoHotkey v2.0
 
 SetWorkingDir A_ScriptDir
+
+
+
+myApp := defineApp("TagHunterAdmin","taghunter_connect")
+; this example refers to my repo http://github.com/samfisherirl/github.ahk
+
+path_of_app := A_ScriptDir
+; set where my application is stored on the local computer
+
+myApp.setPath(path_of_app)
+
+myApp.connectGithubAPI()
+
+new_update := myApp.checkforUpdate()
+; updates := checkforUpdate()
+; new_update := Jxon_dump(update, 0)
+
+; ; new_update_version := update.version 
+; MsgBox new_update
 
 global FilePath := "events_reader\events.csv"
 
@@ -38,6 +61,7 @@ TraySetIcon("logo_tag_hunter_connect_favicon.ico")
 ; TrayTip(Application.Name)
 ; Tray.Delete()
 Tray.Add("Exit", (*) => ExitApp())
+
 
 SettingsGui()
 
@@ -103,8 +127,12 @@ SettingsGui(){
     myGui.Add("Text", "xs ys+10 BackgroundWhite", "Identifiant de votre ordinateur " DeviceUniq)
 
     myGui.Add("Text", "yp+40", "Version de TagHunter Connect " Application.Version)
+    if(new_update){
+         myGui.Add("Text", "w256", "La version " new_update " de TagHunter Connect est disponible.") 
     ogcButtonUpdateApp := myGui.Add("Button", "vUpdate", "Mettre à jour")
     ogcButtonUpdateApp.OnEvent("Click", Update_App)
+
+    }
 
     ogcButtonReloadScript := myGui.Add("Button", "yp+40 vReloadScript", "Relancer TagHunter Connect")
     ogcButtonReloadScript.OnEvent("Click", Reload_Script)
@@ -310,7 +338,7 @@ SettingsGui(){
         run "explorer.exe " A_ScriptDir
     }
     Update_App(*){ 
-
+        myApp.Update()
     }
     Reload_Script(*){ 
         Reload

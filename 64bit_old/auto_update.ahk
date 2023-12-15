@@ -60,7 +60,8 @@ class defineApp {
         this.releaseNotes := "",
         this.appPath := "",
         this.extension := "",
-        this.downloadPath := A_MyDocuments "\temp"
+        this.dest := A_MyDocuments "\test\",
+        this.downloadPath := A_MyDocuments "\temp",
         this.logpath := A_ScriptDir "\log_updater_ahk.json"
     }
     ; Define a method for adding a dictionary of 3 strings to the array
@@ -70,33 +71,35 @@ class defineApp {
     }
 
     connectGithubAPI() {
+
         ; retieve from github library latest releaseUrl, notes, and version
         git := Github(this.username, this.repo)
-      
         this.downloadUrl := git.releaseUrl()
         this.version := git.version()
         this.releaseNotes := git.details()
         this.extension := "." git.zipORexe()
-        ;    git_data := JSON.stringify(git)
-        ;    MsgBox git_data
+
     }
 
     checkforUpdate() {
         jdata := this.loadLog()
-		if (jdata) {
+
+        if (jdata) {
             if (this.version != jdata["version"]) {
-                return  this.version 
+                return jdata
             }
         }
-		else {
-		return False
-		}
+        else {
+            return False
+        }
     }
     LoadLog() {
+
         if FileExist(this.logpath) {
             json_raw := FileRead(this.logpath)
-            ; jdata := JSON.parse(json_raw)
-            ;MsgBox(jdata["version"])
+            jdata := JSON.parse(json_raw)
+
+            ; MsgBox(jdata["version"])
             return jdata
         } else {
             this.writeJSON()
@@ -135,44 +138,71 @@ class defineApp {
         ;gets file from repo, if zip, extract
         ;then overwrite existing app
         ;updates log
-        ; new_update := Jxon_dump(this, 0)
-       
         git := Github(this.username, this.repo)
         git.download(this.downloadpath)
         extension := this.extension
         source := this.downloadpath . extension
+        debug this
+        debug git
         if (InStr(extension, "zip")) or (InStr(extension, "7z")) or (InStr(extension, "rar")) {
-            this.zip()
+            ; this.unz("C:\Users\coral\Documents\temp.zip", "C:\Users\coral\Documents")
+            ;rename folder
+            ; move folder
+            ; FileMove(source, this.appPath)
+            ; this.zip()
         }
         else {
             FileMove(source, this.appPath)
         }
         this.version := git.version()
-        this.writeJSON()
+        ;this.writeJSON()
 
+    }
+    Unz(sZip, sUnz){								
+    ; sZip = the fullpath of the zip file, sUnz the folder to contain the extracted files
+        DirCreate sUnz
+        psh := ComObject("Shell.Application")
+        psh.Namespace( sUnz ).CopyHere( psh.Namespace( sZip ).items, 4|16 )
+       
     }
 
     zip() {
+
+        ; DirCreate "C:\Users\coral\Documents\test\"
+        ; psh := ComObject("Shell.Application")
+        ; psh.Namespace( "C:\Users\coral\Documents\test\" ).CopyHere(  psh.Namespace("C:\Users\coral\Documents\temp.zip").items, 4|16  )
+        ; msgbox(FileRead(ziplog))
         zipperPath := A_MyDocuments . "\7za"
         ziplog := A_MyDocuments . "\templog.txt"
         temp := this.downloadpath . this.extension
+
+     
         SplitPath(this.appPath, ,&app)
         zipobj := Github("samfisherirl", "7za")
+
         if not (FileExist(zipperPath ".exe")) {
             zipobj.download(zipperPath)
         }
         zipperPath := zipperPath . ".exe"
         this.filechecker(zipperPath)
         this.selfReferentialLog()
-        ;msgbox(command)
+        ; msgbox(command)
         try {
             FileMove(ziplog, ziplog ".old")
         } catch {
         }
-        command := A_ComSpec " `"" zipperPath "`" x `"" temp "`" -y -o`"" app "`" >`"" ziplog "`""
+       ;1.1.36.02
+      ;  debug zipperPath% x %temp%'
+        ;debug %zipperPath%"x"%temp%"-y -o"%app%
+        command := A_ComSpec ' '  zipperPath ' x ' "temp" ' -y -o' app
+      ;  command := A_ComSpec  "`"" zipperPath "`" x `"" temp "`" -y -o`"" app "`" >`"" ziplog "`""
+        ;command := A_ComSpec zipperPath "x" temp  "-y -o"app
+        ;  debug lining
+       debug command
         ;msgbox(command)
-        fileappend(command, A_ScriptDir "\temp.txt")
+        fileappend("`n" . command , A_ScriptDir "\temp.txt")
         Run(command)
+
         if this.filechecker(ziplog) {
             msgbox(FileRead(ziplog))
         }
@@ -196,10 +226,11 @@ class defineApp {
     }
     selfReferentialLog(){
         for key, val in this.OwnProps() {
-        msg .= key . val . "`n`n"
+            msg .= key . val . "`n`n"
         }
         FileAppend(msg, A_ScriptDir "\errlog.txt")
     }
+
     ; setDic() {
     ;     dictionary := {}
     ;     for key, value in this.OwnProps() {
@@ -219,4 +250,5 @@ class defineApp {
         }
     ; retreive github library data including url to download and version data
     */
+
 }

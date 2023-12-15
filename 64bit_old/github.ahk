@@ -1,7 +1,5 @@
 ; credit to https://github.com/kurtmckee/ahk_json
 
-
-
 class Gitter {
     __new(val) {
         temp := A_ScriptDir "\temp.json"
@@ -9,19 +7,15 @@ class Gitter {
         Download(url, temp)
         sleep(100)
         data := FileRead(temp)
-        ;    MsgBox data
-
         data := JSON.parse(data)
         try{
-        filedelete(temp)
+            filedelete(temp)
         } catch {
         }
         ;filedelete, "1.json"
-    ;    git_data := JSON.stringify(git)
-        this.dlurl := data["assets_url"]
-        ; this.dlurl := data["assets"][1]["browser_download_url"]
-        this.asset := data["name"]
-        ; this.asset := data["assets"][1]["name"]
+        debug data["assets"]
+        this.dlurl := data["assets"][1]["browser_download_url"]
+        this.asset := data["assets"][1]["name"]
         this.vers := data["html_url"]
         this.body := data["body"]
         this.repo := StrSplit(val, "/")[2]
@@ -53,14 +47,13 @@ class Gitter {
         x := this.zipORexe()
         nameExt := Name "." x
         url := this.releaseUrl()
-
         Download(url, nameExt)
         if !InStr(nameExt, ":\")
             nameExt := A_ScriptDir . "\" . nameExt
         return nameExt
     }
 }
- Github(Username, Repository_Name)
+Github(Username, Repository_Name)
 {
     ;GitDownload("samfisherirl","Geo3D_Manager", Path)
     val := Username "/" Repository_Name
