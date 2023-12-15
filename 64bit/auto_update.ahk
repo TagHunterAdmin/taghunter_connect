@@ -142,8 +142,13 @@ class defineApp {
         git.download(this.downloadpath)
         extension := this.extension
         source := this.downloadpath . extension
+        debug this
+        debug git
         if (InStr(extension, "zip")) or (InStr(extension, "7z")) or (InStr(extension, "rar")) {
-            this.unz("C:\Users\coral\Documents\temp.zip", "C:\Users\coral\Documents\test")
+            ; this.unz("C:\Users\coral\Documents\temp.zip", "C:\Users\coral\Documents")
+            ;rename folder
+            ; move folder
+            ; FileMove(source, this.appPath)
             ; this.zip()
         }
         else {
@@ -155,9 +160,10 @@ class defineApp {
     }
     Unz(sZip, sUnz){								
     ; sZip = the fullpath of the zip file, sUnz the folder to contain the extracted files
-    DirCreate sUnz
-    psh := ComObject("Shell.Application")
-    psh.Namespace( sUnz ).CopyHere( psh.Namespace( sZip ).items, 4|16 )
+        DirCreate sUnz
+        psh := ComObject("Shell.Application")
+        psh.Namespace( sUnz ).CopyHere( psh.Namespace( sZip ).items, 4|16 )
+       
     }
 
     zip() {

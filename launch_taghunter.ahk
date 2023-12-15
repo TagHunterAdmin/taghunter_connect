@@ -1,244 +1,387 @@
-﻿#Persistent
-#NoEnv
-#SingleInstance, force
+﻿; #Persistent
+; #NoEnv
+; #SingleInstance, force
 #Include %A_ScriptDir%\data_client.ahk
-#Include %A_ScriptDir%\radio_box.ahk
-#Include %A_ScriptDir%\csv.ahk
-#Include %A_ScriptDir%\Jxon_Load.ahk
-#Include, %A_ScriptDir%\class.Spinner.ahk
+#Include %A_ScriptDir%\objectToString.ahk
+#Include %A_ScriptDir%\csvtoDict.ahk
+#Include %A_ScriptDir%\_JXON.ahk
 
-unz("C:\Users\coral\Documents\temp.zip", "C:\Users\coral\Documents\test\")
-Unz(sZip, sUnz){								
-    ; sZip = the fullpath of the zip file, sUnz the folder to contain the extracted files
-    FileCreateDir, %sUnz%
-    psh := ComObjCreate("Shell.Application")
-    psh.Namespace( sUnz ).CopyHere( psh.Namespace( sZip ).items, 4|16 )
-}
+#Requires AutoHotkey v2.0
 
-SetWorkingDir, %A_ScriptDir%
+SetWorkingDir A_ScriptDir
 
 global FilePath := "events_reader\events.csv"
+
 if(IsSet(FilePathCustom)){
     FilePath := FilePathCustom
 }
 
-global interval := 0.5 ; set the interval
+global interval := 500 ; set the interval
 global ConfigDone := false
 global DeviceUniq := A_ComputerName
-ImageFile = logo_tag_hunter_connect.png
+global DeviceName := ""
+ImageFile := "logo_tag_hunter_connect.png"
 
+#SingleInstance Force ; Replace with new instance if script is running
 
-Menu, Tray, Icon, logo_tag_hunter_connect_favicon.ico
+;get csv data on events file and convert it to array
+accountArray := CSVtoDict(FilePath)
+;count the number of rows in the csv file (by getting the lentgh of the array)
+global LastCountRows := accountArray.Count
+global LaunchedGameId := false
+global ServeurName := "local"
 
-;DeviceName := checkRegistered()
+; Tray definition =================================================================
+Tray := A_TrayMenu
+Application := { Name: "TagHunter Connect", Version: "1.0" }
+TraySetIcon("logo_tag_hunter_connect_favicon.ico")
+; TrayTip(Application.Name)
+; Tray.Delete()
+Tray.Add("Exit", (*) => ExitApp())
 
-; if(DeviceName){
+SettingsGui()
 
-CSV_Load(FilePath, data, ";")
+SettingsGui(){
+    ; Define parameters of Gui
+    Window := {Width: 800, Height: 500, Title: Application.Name}
+    MenuWidth := 100
+    Navigation := {Label: ["Jeux", "Configuration", "Aide"]}
 
-global LastCountRows := CSV_TotalRows(data)
+    myGui := Gui()
+    myGui.OnEvent("Close", Gui_Escape)
+    myGui.OnEvent("Escape", Gui_Escape)
+    MyGui.OnEvent("Size", Gui_Size)
+    myGui.Opt("+LastFound +Resize MinSize400x300")
+    myGui.BackColor := "FFFFFF"
 
-IfWinNotExist, SPORTident.ReaderUI
-    Run, C:\Program Files (x86)\SPORTident\ReaderUI\SPORTident.ReaderUI.exe
+    Tab := myGui.Add("Tab2", "x-999 y-999 w0 h0 -Wrap +Theme vTabControl")
+    myGui.Tabs := Tab
+    Tab.UseTab() ; Exclude future controls from any tab control
 
-LaunchedGameId = 0
-SearchGame = Sélectionnez le serveur
+    myGui.TabPicSelect := myGui.AddText("x0 y0 w4 h32 vpMenuSelect Background0x0078D7") ; Using a text control to create a colored rectangle
+    ; myGui.TabPicHover := myGui.AddText("x0 y0 w4 h32 vpMenuHover Background0xCCE8FF Hidden") ; Using a text control to create a colored rectangle
 
-Gui, New,,Taghunter
-Gui, Add, Picture, x350 y80 w80 h80, %ImageFile%
-Gui, Font, s15
-Gui, Margin, 10,30
-Gui, Add, Text, w780 x20 hwndHDevice, Recherche du nom du poste
-Gui, Add, Text, w780 x20, Serveur
-Gui, Add, Radio, gChange,Dev
-Gui, Add, Radio, gChange,App
-Gui, Add, Radio, gChange,LocalClient
-Gui, Add, Radio, gChange,LocalSimon
-Gui, Add, Radio, gChange,Local
-Gui, Add, Text, w780 hwndHText, %SearchGame%
-Gui, Show, w800 h600, TAG HUNTER CONNECT
+    myGui.TabTitle := myGui.Add("Text", "x" MenuWidth+10 " y" 0 " w" (Window.Width-MenuWidth)-10 " h" 30 " +0x200 vPageTitle", "")
+    myGui.TabTitle.SetFont("s14 ", "Segoe UI") ; Set Font Options
 
-return
-
-Change:
-
-    ServerOrgigin = %A_GuiControl%
-    DeviceName := checkRegistered(ServerOrgigin)
-
-    ;Check connexion to server
-
-    if(DeviceName){
-
-        DeviceName:=SubStr(DeviceName,1,StrLen(DeviceName)-1)
-        StringTrimLeft, DeviceName, DeviceName, 1
-        ControlSetText, , %DeviceName%, ahk_id %HDevice% 
-
-        ;Start search launch game
-        SearchGame = Recherche de jeu en cours sur %A_GuiControl%
-        ControlSetText, , %SearchGame%, ahk_id %HText% 
-        SetTimer, checkLaunchedGame, 5000
-    }
-return
-
-checkLaunchedGame:
-
-    json_str = {"device_uniq":"%DeviceUniq%"}
-    oWhr := SendTaghunterHttpRequest("GET", "checkDeviceUsedInLaunchedGame", json_str, ServerOrgigin)
-
-    if(oWhr.Status == 201){
-        responseText := StrReplace(oWhr.ResponseText, "\", "")
-        responseText := SubStr(responseText,1,StrLen(responseText)-1)
-        StringTrimLeft, responseText, responseText, 1
-        Response :=StrSplit(responseText, "&")
-        LaunchedGameId := Response[2]
-        LaunchedGameName := Response[1]
-        SearchGame = Connecté au jeu %LaunchedGameName%
-        ControlSetText, , %SearchGame%, ahk_id %HText% ;uses the handle of the control
-        SetTimer, checkLaunchedGame, Off
-        SetTimer, LaunchGame, %interval%
-
-        SetTimer, checkLaunchedGameEnded, 5000 ; Start timer, updating every 5000 milliseconds (5 seconds)
-    }
-    Else{
-        TrayTip, "Taghunter" , Nope
+    Loop Navigation.Label.Length { 
+        Tab.Add([Navigation.Label[A_Index]])
+        If (Navigation.Label[A_Index] = "---") {
+            Continue
+        }
+        ogcTextMenuItem := myGui.Add("Text", "x0 y" (32*A_Index)-32 " h32 w" MenuWidth " +0x200 BackgroundTrans vMenuItem" . A_Index, " " Navigation.Label[A_Index])
+        ogcTextMenuItem.SetFont("s9 c808080", "Segoe UI") ; Set Font Options
+        ogcTextMenuItem.OnEvent("Click", Gui_Menu)
+        ogcTextMenuItem.Index := A_Index
+        if (A_Index = 1) {
+            ogcTextMenuItem.SetFont("c000000")
+            myGui.ActiceTab := ogcTextMenuItem
+            myGui.TabTitle.Value := trim(ogcTextMenuItem.text)
+        }
     }
 
-return 
+    ogchDividerLine := myGui.AddText("x" MenuWidth+10 " y32 w" Window.Width-MenuWidth-10*2 " h1 Section BackgroundD8D8D8") ; Using a text control to create a colored rectangle
+    ogchDividerLine.LeftMargin := 10
 
-checkLaunchedGameEnded:
-    json_str = {"device_uniq":"%DeviceUniq%", "launched_game_id": "%LaunchedGameId%", "ended":"yes"}
-    oWhr := SendTaghunterHttpRequest("GET", "checkLaunchedGameEnded", json_str, ServerOrgigin)
+    ; Start of defining the custom controls
 
-    if(oWhr.Status == 201){
-        ControlSetText, , Jeu terminé. Appuyer sur relancer pour reinitialiser le logiciel, ahk_id %HText% ;uses the handle of the control
-        SetTimer, checkLaunchedGameEnded, Off
-    }else if(oWhr.Status == 401){
+    Tab.UseTab(1) ; Future controls are owned by the specified tab
+
+    myGui.Add("Text", "xs ys+10 BackgroundWhite", "Sélectionner le serveur")
+    radioServeurTGLoc := myGui.Add("Radio", "yp+40", "Serveur Local (http://192.168.128.250/)"), radioServeurTGLoc.OnEvent('Click', ServeurChange)
+    radioServeurTGAppfr := myGui.Add("Radio", "yp+40", "Serveur Cloud (app.taghunter.fr)"), radioServeurTGAppfr.OnEvent('Click', ServeurChange)
+    if(IsAdmin){
+        radioServeurTGDevfr := myGui.Add("Radio", "yp+40", "Serveur Cloud (dev.taghunter.fr)"), radioServeurTGDevfr.OnEvent('Click', ServeurChange)
+        radioServeurTGLocSimon := myGui.Add("Radio", "yp+40", "Serveur Local Simon (http://192.168.129.250/)"), radioServeurTGLocSimon.OnEvent('Click', ServeurChange)
+        radioServeurTGLocLara := myGui.Add("Radio", "yp+40", "Serveur Local Simon Laragon (http://localhost/)"), radioServeurTGLocLara.OnEvent('Click', ServeurChange)
+    }
+
+    myGui.Add("Text", "yp+80 vDeviceNameDiv w256", "") 
+    myGui.Add("Text", "vSearchGameDiv w256", "") 
+
+    Tab.UseTab(2) ; Future controls are owned by the specified tab
+    myGui.Add("Text", "xs ys+10 BackgroundWhite", "Identifiant de votre ordinateur " DeviceUniq)
+
+    myGui.Add("Text", "yp+40", "Version de TagHunter Connect " Application.Version)
+    ogcButtonUpdateApp := myGui.Add("Button", "vUpdate", "Mettre à jour")
+    ogcButtonUpdateApp.OnEvent("Click", Update_App)
+
+    ogcButtonReloadScript := myGui.Add("Button", "yp+40 vReloadScript", "Relancer TagHunter Connect")
+    ogcButtonReloadScript.OnEvent("Click", Reload_Script)
+
+    Tab.UseTab(3) ; Future controls are owned by the specified tab
+    myGui.Add("Text", "xs ys+10 BackgroundWhite vPathConfigDiv", "Chemin d'accès au dossier TagHunter Connect " A_ScriptDir) 
+    myGui.Add("Text", "vPathEventConfigDiv", "Chemin d'accès au fichier events.csv " A_ScriptDir "\" FilePath) 
+
+    ogcButtonOpenAppFolder := myGui.Add("Button", "vOpenAppFolder", "Ouvrir le dossier TagHunter Connect")
+    ogcButtonOpenAppFolder.OnEvent("Click", Open_App_Folder)
+    myGui.Add("Text", "yp+40", "Le chemin de fichier à écrire dans Sportident Reader doit pointer sur le fichier events.csv de TagHunter Connect")
+    MyGui.Add("Picture", "w500 h300", A_ScriptDir "\help_sportident_reader.png")
+
+    Tab.UseTab("")
+
+    ogcButtonOK := myGui.Add("Button", "x" (Window.Width - 170) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonOK", "OK")
+    ogcButtonOK.OnEvent("Click", ButtonOK)
+    ogcButtonOK.LeftDistance := "10"
+    ogcButtonOK.BottomDistance := "10"
+    ogcButtonCancel := myGui.Add("Button", "x" (Window.Width - 80) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonCancel", "Cancel")
+    ogcButtonCancel.OnEvent("Click", Gui_Escape)
+    ogcButtonCancel.LeftDistance := "100"
+    ogcButtonCancel.BottomDistance := "10"
+
+    myGui.Title := Window.Title
+    myGui.Show(" w" Window.Width " h" Window.Height)
+
+    return
+
+    ; Nested Functions ==============================================================================
+    ServeurChange(Radio, Info){
+        global ServeurName
+        global DeviceName
+        ServeurName := Radio.Text
+        DeviceName := checkRegistered(ServeurName)
+
+        myGui['SearchGameDiv'].Text := "Recherche de jeu en cours sur " ServeurName
+        myGui['DeviceNameDiv'].Text := "Vous êtes connecté au poste " DeviceName
+        ; myGui['DeviceNameConfigDiv'].Text := "Le nom donné à ce poste " DeviceName
+
+        SetTimer checkLaunchedGame, 5000
+        ; checkLaunchedGame(ServeurName)
 
     }
 
-return
+    checkRegistered(ServeurName) {
 
-LaunchGame:
+        json_string_map := Map("licenceNumber", LicenceNumber, "DateTime", A_now, "device_uniq", DeviceUniq)
+        json_string := Jxon_dump(json_string_map, 0)
+        oWhr := SendTaghunterHttpRequest("GET", "checkDeviceRegistration", json_string)
 
-    CSV_Load(FilePath, "data", ";")
-    CountRows:=CSV_TotalRows("data")
+        if(oWhr.Status == 401){
+            Result := MsgBox("Ce poste n'est pas enregistré. Voulez-vous ajouter ce poste à votre compte?",, "YesNo")
 
-    if(CountRows > LastCountRows){
-        LastCountRows := CountRows
-        Cols:=CSV_TotalCols("data")
-        Last_Row := CSV_ReadRow("data", CountRows)
+            if(Result = "Yes"){
+                deviceNameInput := InputBox("Donnez un nom à ce poste", "UserInput", "w100 h100")
+                if deviceNameInput.Result = "Cancel"
+                    MsgBox "You entered '" deviceNameInput.Value "' but then cancelled."
+                else
+                    MsgBox deviceNameInput.Value 
+                return Register(deviceNameInput.Value, ServeurName)
+            }
+            else{
+                ExitApp
+            }
 
-        json_str = {"LaunchedGameId":"%LaunchedGameId%","lastLine": "%Last_Row%", "licence_number": "%LicenceNumber%", "device_uniq":"%DeviceUniq%"}
-        oWhr := SendTaghunterHttpRequest("POST", "api", json_str, ServerOrgigin)
-    }
-return
-
-; }
-; Label
-
-Register(deviceName, ServerOrgigin) {
-
-    json_str = {"licence_number": "%LicenceNumber%", "device_name":"%deviceName%", "device_uniq":"%DeviceUniq%"}
-
-    oWhr := SendTaghunterHttpRequest("POST","registerDevice", json_str, ServerOrgigin)
-MsgBox, % oWhr.ResponseText
-
-    ArrayResponse := Jxon_Load(oWhr.ResponseText)
-    if(oWhr.Status == 201){
-        global IsRegistered := true 
-        TrayTip, "Taghunter" , % StrReplace(oWhr.ResponseText, "\u00e9", Chr(0x00e9))
-    }else{
-        MsgBox, % oWhr.ResponseText
+        }
+        else if(oWhr.Status == 301) {
+            MsgBox StrReplace(oWhr.ResponseText, "\u00e9", Chr(0x00e9))
+        }
+        else {
+            return oWhr.ResponseText ; return the device name
+        }
     }
 
-}
+    checkLaunchedGame(){
 
-checkRegistered(ServerOrgigin) {
-    json_str = {"licence_number": "%LicenceNumber%", "device_uniq":"%DeviceUniq%"}
-    oWhr := SendTaghunterHttpRequest("GET", "checkDeviceRegistration", json_str, ServerOrgigin)
-    if(oWhr.Status == 401){
-        Msgbox 4, Confirm, Ce poste n'est pas enregistré. Voulez-vous ajouter ce poste à votre compte?
+        global LaunchedGameId
+        global ServeurName
 
-        IfMsgBox NO
-        {
-            ExitApp
+        json_string_map := Map("device_uniq", DeviceUniq)
+        json_string := Jxon_dump(json_string_map, 0)
+        oWhr := SendTaghunterHttpRequest("GET", "checkDeviceUsedInLaunchedGame", json_string)
+
+        if(oWhr.Status == 201){
+            responseText := StrReplace(oWhr.ResponseText, "\", "")
+            responseText := SubStr(responseText,1,StrLen(responseText)-1)
+            ; StringTrimLeft responseText , responseText , 1
+            Response := StrSplit(responseText, "&")
+            LaunchedGameId := Response[2]
+            LaunchedGameName := Response[1]
+
+            myGui['SearchGameDiv'].Text := "Connecté au jeu" LaunchedGameName
+            ; ControlSetText, , %SearchGame%, ahk_id %HText% ;uses the handle of the control
+            ; SetTimer, checkLaunchedGame, Off
+            ; LaunchGame(LaunchedGameId, ServeurName)
+            SetTimer checkLaunchedGame, 0
+            SetTimer checkLaunchedGameEnded, 5000
+            SetTimer LaunchGame, interval
+
+            ; SetTimer, checkLaunchedGameEnded, 5000 ; Start timer, updating every 5000 milliseconds (5 seconds)
         }
         Else{
-            InputBox, UserInput, Nom du poste, Donnez un nom à ce poste.
-            if ErrorLevel
-                ExitApp
-            else
-                Register(UserInput, ServerOrgigin)
-            return UserInput
+            ; TrayTip, "Taghunter" , % oWhr.ResponseText
+        }
+
+        return 
+    }
+
+    checkLaunchedGameEnded(){
+
+        global ServeurName
+        ; json_str = {"device_uniq":"%DeviceUniq%", "launched_game_id": "%LaunchedGameId%", "ended":"yes"}
+        json_string_map := Map("device_uniq", DeviceUniq, "launched_game_id", LaunchedGameId, "ended", "yes" )
+        json_string := Jxon_dump(json_string_map, 0)
+        oWhr := SendTaghunterHttpRequest("GET", "checkLaunchedGameEnded", json_string)
+
+        if(oWhr.Status == 201){
+            myGui['SearchGameDiv'].Text := "Jeu terminé. Sélectionnez à nouveau le serveur pour se connecter à un nouveau jeu"
+            SetTimer checkLaunchedGameEnded, 0
+            SetTimer LaunchGame, 0
+        }else if(oWhr.Status == 401){
+
+        }
+
+        return
+    }
+
+    SendTaghunterHttpRequest(method, httpPath, json_string){
+        global SerbeurName
+        If(ServeurName == "Serveur Cloud (dev.taghunter.fr)"){
+            originPath :="https://dev.taghunter.fr/"
+        }else if(ServeurName == "Serveur Cloud (app.taghunter.fr)"){
+            originPath :="https://app.taghunter.fr/"
+        }else if(ServeurName == "Serveur Local (http://192.168.128.250/)"){
+            originPath :="http://192.168.128.250/"
+        }else if(ServeurName == "Serveur Local Simon (http://192.168.129.250/)"){
+            originPath :="http://192.168.129.250/"
+        }else if ( ServeurName == "Serveur Local Simon Laragon (http://localhost/)"){
+            originPath :="http://localhost/"
+        }
+
+        fullPath := originPath "taghunter/public/api/" httpPath
+        ; fullPath :="http://localhost/taghunter/public/api/" httpPath
+        ; fullPath :="https://app.taghunter.fr/taghunter/public/api/" httpPath
+
+        oWhr := ComObject("WinHttp.WinHttpRequest.5.1")
+
+        try{ ; only way to properly protect from an error here
+            oWhr.Open(method, fullPath, false)
+            oWhr.SetRequestHeader("Content-Type", "application/json")
+            oWhr.SetRequestHeader("Authorization", "Bearer 80b44ea9c302237f9178a137d9e86deb-20083fb12d9579469f24afa80816066b")
+            ; oWhr.Option(6) := false ; disable redirect
+            if(json_string){
+                oWhr.Send(json_string)
+            }else{
+                oWhr.Send()
+            }
+
+            ; oWhr.Send(json_str)
+
+        }catch as e{
+
+            return e.message
+        }
+
+        return oWhr
+    }
+
+    LaunchGame(){
+        global LaunchedGameId
+        global ServeurName
+        global LastCountRows 
+        accountArray := CSVtoDict(FilePath)
+        CountRows := accountArray.Count
+
+        if(CountRows > LastCountRows){
+            LastCountRows := CountRows
+            Last_Row := Jxon_dump(accountArray[CountRows - 1], 0)
+            json_string_map := Map("LaunchedGameId", LaunchedGameId, "lastLine", Last_Row, "device_uniq", DeviceUniq)
+            json_string := Jxon_dump(json_string_map, 0)
+
+            oWhr := SendTaghunterHttpRequest("POST", "postLaunchedGameLastRow", json_string)
+        }
+        return
+    }
+
+    Register(deviceName, ServeurName) {
+
+        json_string_map := Map("licenceNumber", LicenceNumber, "deviceName", deviceName, "device_uniq", DeviceUniq)
+        json_string := Jxon_dump(json_string_map, 0)
+        oWhr := SendTaghunterHttpRequest("GET", "registerDevice", json_string)
+
+        if(oWhr.Status == 201){
+            global IsRegistered := true 
+            return oWhr.ResponseText
+        }else{
+            MsgBox oWhr.ResponseText
         }
     }
-    else if(oWhr.Status == 301) {
-        MsgBox, % StrReplace(oWhr.ResponseText, "\u00e9", Chr(0x00e9))
-    }
-    else {
-        return oWhr.ResponseText ; return the device name
-    }
-}
 
-SendTaghunterHttpRequest(method, httpPath, json_str, ServerOrgigin){
-
-    If(ServerOrgigin == "Dev"){
-        originPath :="https://dev.taghunter.fr/"
-    }else if(ServerOrgigin == "App"){
-        originPath :="https://app.taghunter.fr/"
-    }else if(ServerOrgigin == "LocalClient"){
-        originPath :="http://192.168.128.250/"
-    }else if(ServerOrgigin == "LocalSimon"){
-        originPath :="http://192.168.129.250/"
-    }else{
-        originPath :="http://localhost/"
+    Open_App_Folder(*){ 
+        run "explorer.exe " A_ScriptDir
     }
-    fullPath := originPath "taghunter/public/api/" httpPath
-    ; fullPath :="http://localhost/taghunter/public/api/" httpPath
-    ; fullPath :="https://app.taghunter.fr/taghunter/public/api/" httpPath
-    try{ ; only way to properly protect from an error here
-       
-           oWhr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-    oWhr.Open(method, fullPath, false)
-    oWhr.SetRequestHeader("Content-Type", "application/json")
-    oWhr.SetRequestHeader("Authorization", "Bearer 80b44ea9c302237f9178a137d9e86deb-20083fb12d9579469f24afa80816066b")
-    oWhr.Option(6) := false   ; disable redirect
-    oWhr.Send(json_str)
+    Update_App(*){ 
 
-        ; you can get the response data either in raw or text format
-        ; raw: hObject.responseBody
-        ; text: hObject.responseText	
-    }catch e{
-          
-        return e.message
+    }
+    Reload_Script(*){ 
+        Reload
+    }
+    ButtonOK(*){
+        Saved := MyGui.Submit(0)
+        MsgBox("CheckboxExample`t[" Saved.CheckboxExample "]`n")
+        ExitApp()
     }
 
-return oWhr
-}
-
-;;;;;;OLD
-LaunchGame2(){
-
-    CSV_Load(FilePath, "data", ";")
-
-    CountRows:=CSV_TotalRows("data")
-
-    if(CountRows > LastCountRows){
-
-        LastCountRows := CountRows
-        ; TrayTip, "Taghunter" , % "Envoi en cours"
-        ; TrayTip, "Taghunter" , %LaunchedGameId%
-        Cols:=CSV_TotalCols("data")
-        Last_Row := CSV_ReadRow("data", CountRows)
-
-        oWhr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-        oWhr.Open("POST", "https://app.taghunter.fr/taghunter/public/api/api", false)
-        oWhr.SetRequestHeader("Content-Type", "application/json")
-        oWhr.SetRequestHeader("Authorization", "Bearer 80b44ea9c302237f9178a137d9e86deb-20083fb12d9579469f24afa80816066b")
-
-        json_str = {"LaunchedGameId":"%LaunchedGameId%","lastLine": "%Last_Row%", "licence_number": "%LicenceNumber%", "device_uniq":"%DeviceUniq%"}
-
-        oWhr.Send(json_str)
+    Gui_Escape(*){ 
+        ExitApp() ; Terminate the script unconditionally
     }
 
+    Gui_Menu(guiCtrlObj, info, *){
+        ; Called when clicking the menu
+        thisGui := guiCtrlObj.Gui
+        thisGui.ActiceTab.SetFont("c808080")
+        thisGui.Tabs.Choose(trim(guiCtrlObj.text))
+        thisGui.TabTitle.Value := trim(GuiCtrlObj.text)
+        thisGui.ActiceTab := GuiCtrlObj
+        guiCtrlObj.SetFont("c000000")
+        thisGui.TabPicSelect.Move(0, (32*GuiCtrlObj.Index) - 32)
+        return
+    }
+
+    Gui_Size(thisGui, MinMax, Width, Height) {
+        if MinMax = -1	; The window has been minimized. No action needed.
+            return
+        DllCall("LockWindowUpdate", "Uint", thisGui.Hwnd)
+        For Hwnd, GuiCtrlObj in thisGui{
+            if GuiCtrlObj.HasProp("LeftMargin"){
+                GuiCtrlObj.GetPos(&cX, &cY, &cWidth, &cHeight)
+                GuiCtrlObj.Move(, , Width-cX-GuiCtrlObj.LeftMargin,)
+            }
+            if GuiCtrlObj.HasProp("LeftDistance") {
+                GuiCtrlObj.GetPos(&cX, &cY, &cWidth, &cHeight)
+                GuiCtrlObj.Move(Width -cWidth - GuiCtrlObj.LeftDistance, , , )
+            }
+            if GuiCtrlObj.HasProp("BottomDistance") {
+                GuiCtrlObj.GetPos(&cX, &cY, &cWidth, &cHeight)
+                GuiCtrlObj.Move(, Height - cHeight - GuiCtrlObj.BottomDistance, , )
+            }
+            if GuiCtrlObj.HasProp("BottomMargin") {
+                GuiCtrlObj.GetPos(&cX, &cY, &cWidth, &cHeight)
+                GuiCtrlObj.Move(, , , Height -cY - GuiCtrlObj.BottomMargin)
+            } 
+        }
+        DllCall("LockWindowUpdate", "Uint", 0)
+    }
+    CSVprs(str)								;creates an array of the elements of a CSV string
+    {
+        arr := []
+        Loop Parse, str, "CSV"
+            arr.Push(A_LoopField)
+        return arr
+    }
+
+    CSVtoDict(file)
+    {
+        array := Map()
+        data 	:= StrSplit(FileRead(file), "`n", "`r")
+        ; hdr 	:= CSVprs(data.RemoveAt(1))				;reads the 1st line into an array and deletes it from the data array. Remove this line if your data does not have Headers.
+
+        for x,y in data
+        {
+            array[x] := Map()
+            for k,v in CSVprs(y)
+                array[x][k] := v				;change [hdr[k]] to just [k] if no headers
+            ; array[x][hdr[k]] := v				;change [hdr[k]] to just [k] if no headers
+        }
+        Return array
+    }
 }
