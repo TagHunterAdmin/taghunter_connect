@@ -14,14 +14,12 @@
 
 SetWorkingDir A_ScriptDir
 
-Application := { Name: "TagHunter Connect", Version: "1.0" }
+Application := { Name: "TagHunter Connect", Version: "1.4" }
 
 myApp := defineApp("TagHunterAdmin","taghunter_connect")
-; this example refers to my repo http://github.com/samfisherirl/github.ahk
 
 path_of_app := A_ScriptDir
 ; set where my application is stored on the local computer
-
 myApp.setPath(path_of_app)
 
 myApp.connectGithubAPI()
@@ -38,7 +36,7 @@ global FilePath := "events_reader\events.csv"
 if(IsSet(FilePathCustom)){
     FilePath := FilePathCustom
 }
-
+;C:\Users\coral\Documents\7za.exe x "C:\Users\coral\Documents\temp.zip" -y -o"C:\Users\coral\Documents"
 global interval := 500 ; set the interval
 global ConfigDone := false
 global DeviceUniq := A_ComputerName
@@ -56,12 +54,11 @@ global ServeurName := "local"
 
 ; Tray definition =================================================================
 Tray := A_TrayMenu
-Application := { Name: "TagHunter Connect Test", Version: "1.0" }
+; Application := { Name: "TagHunter Connect", Version: "1.0" }
 TraySetIcon("logo_tag_hunter_connect_favicon.ico")
 ; TrayTip(Application.Name)
 ; Tray.Delete()
 Tray.Add("Exit", (*) => ExitApp())
-
 
 SettingsGui()
 
@@ -128,9 +125,10 @@ SettingsGui(){
 
     myGui.Add("Text", "yp+40", "Version de TagHunter Connect " Application.Version)
     if(new_update){
-         myGui.Add("Text", "w256", "La version " new_update " de TagHunter Connect est disponible.") 
-    ogcButtonUpdateApp := myGui.Add("Button", "vUpdate", "Mettre à jour")
-    ogcButtonUpdateApp.OnEvent("Click", Update_App)
+        myGui.Add("Text", "w256 vNewVersionUpdate", "La version " new_update " de TagHunter Connect est disponible.") 
+        ; ogcButtonUpdateApp := myGui.Add("Button", "vUpdateAppButton", "Mettre à jour")
+        ogcButtonUpdateApp := myGui.AddButton('Visible', "Mettre à jour")
+        ogcButtonUpdateApp.OnEvent("Click", Update_App)
 
     }
 
@@ -148,13 +146,13 @@ SettingsGui(){
 
     Tab.UseTab("")
 
-    ogcButtonOK := myGui.Add("Button", "x" (Window.Width - 170) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonOK", "OK")
-    ogcButtonOK.OnEvent("Click", ButtonOK)
-    ogcButtonOK.LeftDistance := "10"
-    ogcButtonOK.BottomDistance := "10"
-    ogcButtonCancel := myGui.Add("Button", "x" (Window.Width - 80) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonCancel", "Cancel")
+    ; ogcButtonOK := myGui.Add("Button", "x" (Window.Width - 170) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonOK", "OK")
+    ; ogcButtonOK.OnEvent("Click", ButtonOK)
+    ; ogcButtonOK.LeftDistance := "10"
+    ; ogcButtonOK.BottomDistance := "10"
+    ogcButtonCancel := myGui.Add("Button", "x" (Window.Width - 80) - 10 " y" (Window.Height - 24) - 10 " w80 h24 vButtonCancel", "Fermer")
     ogcButtonCancel.OnEvent("Click", Gui_Escape)
-    ogcButtonCancel.LeftDistance := "100"
+    ogcButtonCancel.LeftDistance := "10"
     ogcButtonCancel.BottomDistance := "10"
 
     myGui.Title := Window.Title
@@ -338,16 +336,19 @@ SettingsGui(){
         run "explorer.exe " A_ScriptDir
     }
     Update_App(*){ 
-        myApp.Update()
+      myGui['NewVersionUpdate'].Text := "Mise à jour en cours. Ne fermez pas la fenêtre"
+      ogcButtonUpdateApp.Visible := false
+        ; myApp.Update()
+        ;  Reload
     }
     Reload_Script(*){ 
         Reload
     }
-    ButtonOK(*){
-        Saved := MyGui.Submit(0)
-        MsgBox("CheckboxExample`t[" Saved.CheckboxExample "]`n")
-        ExitApp()
-    }
+    ; ButtonOK(*){
+    ;     Saved := MyGui.Submit(0)
+    ;     MsgBox("CheckboxExample`t[" Saved.CheckboxExample "]`n")
+    ;     ExitApp()
+    ; }
 
     Gui_Escape(*){ 
         ExitApp() ; Terminate the script unconditionally

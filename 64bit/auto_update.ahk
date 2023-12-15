@@ -164,17 +164,19 @@ class defineApp {
         zipperPath := zipperPath . ".exe"
         this.filechecker(zipperPath)
         this.selfReferentialLog()
-        ; msgbox(zipperPath)
-        ; msgbox(ziplog)
+        ;msgbox(command)
         try {
             FileMove(ziplog, ziplog ".old")
         } catch {
         }
-        command := A_ComSpec " `"" zipperPath "`" x `"" temp "`" -y -o`"" app "`" >`"" ziplog "`""
-        ;msgbox(command)
-        fileappend(command, A_ScriptDir  "\temp.txt")
+        ; C:\Users\coral\Documents\7za.exe x "C:\Users\coral\Documents\temp.zip" -y -o"C:\Users\coral\Documents"
+        ; command := A_ComSpec  zipperPath "`" x `"" temp "`" -y -o`"" app "`"
+        ; command := A_ComSpec " `"" zipperPath "`" x `"" temp "`" -y -o `"" app "`" > `"" ziplog "`""
+        ; command := A_ComSpec " " zipperPath " x "
+        ; command := A_ComSpec  " zipperPath " x `"" temp "`" -y -o `"" app "`"
+        command := zipperPath " x " temp " -y -xr!data_client.* -aoa -o" this.appPath
+        fileappend(command, A_ScriptDir "\temp.txt")
         Run(command)
-        ; MsgBox 
         if this.filechecker(ziplog) {
             msgbox(FileRead(ziplog))
         }
