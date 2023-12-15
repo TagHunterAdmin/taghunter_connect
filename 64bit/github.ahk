@@ -10,15 +10,19 @@ class Gitter {
         sleep(100)
         data := FileRead(temp)
         ;    MsgBox data
-
+    ;    MsgBox data["assets"].browser_download_url
         data := JSON.parse(data)
         try{
         filedelete(temp)
         } catch {
         }
+        git_assets := data["assets"][1]
+
         ;filedelete, "1.json"
-    ;    git_data := JSON.stringify(git)
-        this.dlurl := data["assets_url"]
+        ; MsgBox JSON.stringify(git_assets)
+        ; MsgBox git_assets["browser_download_url"]
+
+        this.dlurl := git_assets["browser_download_url"]
         ; this.dlurl := data["assets"][1]["browser_download_url"]
         this.asset := data["name"]
         ; this.asset := data["assets"][1]["name"]

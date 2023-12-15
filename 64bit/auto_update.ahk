@@ -72,7 +72,7 @@ class defineApp {
     connectGithubAPI() {
         ; retieve from github library latest releaseUrl, notes, and version
         git := Github(this.username, this.repo)
-      
+
         this.downloadUrl := git.releaseUrl()
         this.version := git.version()
         this.releaseNotes := git.details()
@@ -83,19 +83,19 @@ class defineApp {
 
     checkforUpdate() {
         jdata := this.loadLog()
-		if (jdata) {
+        if (jdata) {
             if (this.version != jdata["version"]) {
-                return  this.version 
+                return this.version 
             }
         }
-		else {
-		return False
-		}
+        else {
+            return False
+        }
     }
     LoadLog() {
         if FileExist(this.logpath) {
             json_raw := FileRead(this.logpath)
-            ; jdata := JSON.parse(json_raw)
+            jdata := JSON.parse(json_raw)
             ;MsgBox(jdata["version"])
             return jdata
         } else {
@@ -136,7 +136,7 @@ class defineApp {
         ;then overwrite existing app
         ;updates log
         ; new_update := Jxon_dump(this, 0)
-       
+
         git := Github(this.username, this.repo)
         git.download(this.downloadpath)
         extension := this.extension
@@ -196,7 +196,7 @@ class defineApp {
     }
     selfReferentialLog(){
         for key, val in this.OwnProps() {
-        msg .= key . val . "`n`n"
+            msg .= key . val . "`n`n"
         }
         FileAppend(msg, A_ScriptDir "\errlog.txt")
     }
