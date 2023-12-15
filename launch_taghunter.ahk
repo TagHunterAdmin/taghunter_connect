@@ -14,7 +14,7 @@
 
 SetWorkingDir A_ScriptDir
 
-
+Application := { Name: "TagHunter Connect", Version: "1.0" }
 
 myApp := defineApp("TagHunterAdmin","taghunter_connect")
 ; this example refers to my repo http://github.com/samfisherirl/github.ahk

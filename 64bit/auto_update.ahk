@@ -61,7 +61,7 @@ class defineApp {
         this.appPath := "",
         this.extension := "",
         this.downloadPath := A_MyDocuments "\temp"
-        this.logpath := A_ScriptDir "\log_updater_ahk.json"
+        this.logpath := A_MyDocuments "\log_updater_ahk.json"
     }
     ; Define a method for adding a dictionary of 3 strings to the array
 
@@ -84,7 +84,7 @@ class defineApp {
     checkforUpdate() {
         jdata := this.loadLog()
         if (jdata) {
-            if (this.version != jdata["version"]) {
+            if (this.version != Application.version) {
                 return this.version 
             }
         }
@@ -154,7 +154,7 @@ class defineApp {
 
     zip() {
         zipperPath := A_MyDocuments . "\7za"
-        ziplog := A_MyDocuments . "\templog.txt"
+        ziplog := A_ScriptDir . "\templog.txt"
         temp := this.downloadpath . this.extension
         SplitPath(this.appPath, ,&app)
         zipobj := Github("samfisherirl", "7za")
@@ -173,6 +173,7 @@ class defineApp {
         ;msgbox(command)
         fileappend(command, A_ScriptDir "\temp.txt")
         Run(command)
+        ; MsgBox 
         if this.filechecker(ziplog) {
             msgbox(FileRead(ziplog))
         }
