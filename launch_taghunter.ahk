@@ -338,8 +338,8 @@ SettingsGui(){
     Update_App(*){ 
       myGui['NewVersionUpdate'].Text := "Mise à jour en cours. Ne fermez pas la fenêtre"
       ogcButtonUpdateApp.Visible := false
-        ; myApp.Update()
-        ;  Reload
+        myApp.Update()
+         Reload
     }
     Reload_Script(*){ 
         Reload
