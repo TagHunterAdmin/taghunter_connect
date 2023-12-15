@@ -154,7 +154,7 @@ class defineApp {
 
     zip() {
         zipperPath := A_MyDocuments . "\7za"
-        ziplog := A_ScriptDir . "\templog.txt"
+        ziplog := A_MyDocuments . "\templog.txt"
         temp := this.downloadpath . this.extension
         SplitPath(this.appPath, ,&app)
         zipobj := Github("samfisherirl", "7za")
@@ -164,14 +164,15 @@ class defineApp {
         zipperPath := zipperPath . ".exe"
         this.filechecker(zipperPath)
         this.selfReferentialLog()
-        ;msgbox(command)
+        ; msgbox(zipperPath)
+        ; msgbox(ziplog)
         try {
             FileMove(ziplog, ziplog ".old")
         } catch {
         }
         command := A_ComSpec " `"" zipperPath "`" x `"" temp "`" -y -o`"" app "`" >`"" ziplog "`""
         ;msgbox(command)
-        fileappend(command, A_ScriptDir "\temp.txt")
+        fileappend(command, A_ScriptDir  "\temp.txt")
         Run(command)
         ; MsgBox 
         if this.filechecker(ziplog) {

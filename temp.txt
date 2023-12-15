@@ -1,1 +1,1 @@
-C:\WINDOWS\system32\cmd.exe "C:\Users\coral\Documents\7za.exe" x "C:\Users\coral\Documents\temp.zip" -y -o"C:\Users\coral\Desktop" >"C:\Users\coral\Desktop\Taghunter_Connect\templog.txt"
+C:\WINDOWS\system32\cmd.exe "C:\Users\coral\Documents\7za.exe" x "C:\Users\coral\Documents\temp.zip" -y -o"C:\Users\coral\Desktop" >"C:\Users\coral\Documents\templog.txt"

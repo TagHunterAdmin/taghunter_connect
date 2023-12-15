@@ -56,7 +56,7 @@ global ServeurName := "local"
 
 ; Tray definition =================================================================
 Tray := A_TrayMenu
-Application := { Name: "TagHunter Connect", Version: "1.0" }
+Application := { Name: "TagHunter Connect Test", Version: "1.0" }
 TraySetIcon("logo_tag_hunter_connect_favicon.ico")
 ; TrayTip(Application.Name)
 ; Tray.Delete()
